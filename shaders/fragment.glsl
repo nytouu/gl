@@ -2,8 +2,10 @@
 out vec4 FragColor;
 
 in vec4 vertexColor;
+in vec2 TexCoord;
 
 uniform vec4 ourColor; // we set this variable in the OpenGL code.
+uniform sampler2D ourTexture;
 
 void main()
 {
@@ -13,5 +15,5 @@ void main()
 		vertexColor.z + ourColor.z,
 		1.0
 	);
-    FragColor = finalColor;
+	FragColor = texture(ourTexture, TexCoord) + finalColor;
 }

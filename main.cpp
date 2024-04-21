@@ -81,8 +81,6 @@ class Application
     void run()
     {
         init();
-        loadVertices();
-        loadTexture();
         update();
         cleanup();
     }
@@ -131,6 +129,9 @@ class Application
 
         glfwSetWindowAspectRatio(window, 8, 6);
         glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
+        loadVertices();
+        loadTexture();
     }
 
     void loadVertices()

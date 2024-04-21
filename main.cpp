@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <glm/ext/scalar_constants.hpp>
 #include <iostream>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -19,13 +20,56 @@ using namespace std;
 const uint32_t WIDTH = 1280;
 const uint32_t HEIGHT = 720;
 
-const float SCREEN_RATIO = 16.0f / 9.0f;
-
-float vertices[] = {
+float vertexData[] = {
+    // xyz + uv
     0.5f,  0.5f,  0.0f, 1.0f, 1.0f, // top right
     0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, // bottom right
     -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, // bottom left
     -0.5f, 0.5f,  0.0f, 0.0f, 1.0f  // top left
+};
+
+float cubeVertices[] = {
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 };
 
 unsigned int indices[] = {
@@ -85,7 +129,9 @@ class Application
 
         glViewport(0, 0, WIDTH, HEIGHT);
 
-        glfwSetWindowAspectRatio(window, 16, 9);
+        glEnable(GL_DEPTH_TEST);
+
+        glfwSetWindowAspectRatio(window, 1, 1);
         glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     }
 
@@ -100,7 +146,7 @@ class Application
         glGenVertexArrays(1, &VAO);
         glBindVertexArray(VAO);
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
 
         // send to gpu
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
@@ -135,7 +181,7 @@ class Application
         if (imageData)
         {
             // generate opengl texture
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
             glGenerateMipmap(GL_TEXTURE_2D);
         }
         else
@@ -146,12 +192,13 @@ class Application
         stbi_image_free(imageData);
 
         // add texcoords to vertex format
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
         glEnableVertexAttribArray(1);
     }
 
     void update()
     {
+
         while (!glfwWindowShouldClose(window))
         {
             processInput();
@@ -162,18 +209,50 @@ class Application
             float redValue = (sin(timeValue) / 1.0f) + 0.8f;
             float blueValue = (sin(timeValue) / 3.0f) + 0.1f;
 
-            glClearColor(0.1f, 0.0f, 0.1f, 1.0f);
+            glClearColor(0.4f, 0.1f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             shader.use();
 
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));  
+            /* model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f)); */
+
+            glm::mat4 view = glm::mat4(1.0f);
+            // note that we're translating the scene in the reverse direction of where we want to move
+            view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+
+            glm::mat4 projection;
+            projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+
+            int modelLoc = glGetUniformLocation(shader.id, "model");
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+            int viewLoc = glGetUniformLocation(shader.id, "view");
+            glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+
+            int projectionLoc = glGetUniformLocation(shader.id, "projection");
+            glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+            glm::mat4 trans = glm::mat4(1.0f);
+            trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
+            trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0, 0.0, 1.0));
+
+            unsigned int transformLoc = glGetUniformLocation(shader.id, "transform");
+            glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+
             shader.setVec4("ourColor", 0.0f, greenValue, 0.0f, 1.0f);
             shader.setVec3("random", redValue, greenValue, blueValue);
 
-            /* glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO); */
             glBindTexture(GL_TEXTURE_2D, texture);
             glBindVertexArray(VAO);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+
+            trans = glm::translate(trans, glm::vec3(0.9f, 0.0f, 0.0f));
+            trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
+            trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0, 0.0, 1.0));
+            glUniformMatrix4fv(transformLoc, 1, GL_FALSE, &trans[0][0]);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
 
             glfwSwapBuffers(window);
             glfwPollEvents();

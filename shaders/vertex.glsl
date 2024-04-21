@@ -6,10 +6,15 @@ out vec4 vertexColor;
 out vec2 TexCoord;
 
 uniform vec3 random;
+uniform mat4 transform;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
 
 void main()
 {
-    gl_Position = vec4(aPos + random / 10, 1.0);
+    gl_Position = projection * view * model * transform * vec4(aPos + random / 10, 1.0);
 	vertexColor = vec4(0.0, 0.0, 1.0, 1.0);
 	TexCoord = aTexCoord;
 }

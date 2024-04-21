@@ -17,16 +17,8 @@
 
 using namespace std;
 
-const uint32_t WIDTH = 1280;
-const uint32_t HEIGHT = 720;
-
-float vertexData[] = {
-    // xyz + uv
-    0.5f,  0.5f,  0.0f, 1.0f, 1.0f, // top right
-    0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, // bottom right
-    -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, // bottom left
-    -0.5f, 0.5f,  0.0f, 0.0f, 1.0f  // top left
-};
+const uint32_t WIDTH = 800;
+const uint32_t HEIGHT = 600;
 
 float cubeVertices[] = {
     -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
@@ -71,6 +63,12 @@ float cubeVertices[] = {
     -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
     -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 };
+
+glm::vec3 cubePositions[] = {glm::vec3(0.0f, 0.0f, 0.0f),    glm::vec3(2.0f, 5.0f, -15.0f),
+                             glm::vec3(-1.5f, -2.2f, -2.5f), glm::vec3(-3.8f, -2.0f, -12.3f),
+                             glm::vec3(2.4f, -0.4f, -3.5f),  glm::vec3(-1.7f, 3.0f, -7.5f),
+                             glm::vec3(1.3f, -2.0f, -2.5f),  glm::vec3(1.5f, 2.0f, -2.5f),
+                             glm::vec3(1.5f, 0.2f, -1.5f),   glm::vec3(-1.3f, 1.0f, -1.5f)};
 
 unsigned int indices[] = {
     0, 1, 3, // first triangle
@@ -131,7 +129,7 @@ class Application
 
         glEnable(GL_DEPTH_TEST);
 
-        glfwSetWindowAspectRatio(window, 1, 1);
+        glfwSetWindowAspectRatio(window, 8, 6);
         glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     }
 
@@ -198,7 +196,6 @@ class Application
 
     void update()
     {
-
         while (!glfwWindowShouldClose(window))
         {
             processInput();
@@ -215,44 +212,46 @@ class Application
             shader.use();
 
             glm::mat4 model = glm::mat4(1.0f);
-            model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));  
-            /* model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f)); */
+            model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
 
             glm::mat4 view = glm::mat4(1.0f);
-            // note that we're translating the scene in the reverse direction of where we want to move
             view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
 
             glm::mat4 projection;
             projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
 
             int modelLoc = glGetUniformLocation(shader.id, "model");
-            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+            shader.setMat4("model", model);
 
             int viewLoc = glGetUniformLocation(shader.id, "view");
-            glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+            shader.setMat4("view", view);
 
             int projectionLoc = glGetUniformLocation(shader.id, "projection");
-            glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+            shader.setMat4("projection", projection);
 
             glm::mat4 trans = glm::mat4(1.0f);
             trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
             trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0, 0.0, 1.0));
 
             unsigned int transformLoc = glGetUniformLocation(shader.id, "transform");
-            glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+            shader.setMat4("transform", trans);
 
             shader.setVec4("ourColor", 0.0f, greenValue, 0.0f, 1.0f);
             shader.setVec3("random", redValue, greenValue, blueValue);
 
             glBindTexture(GL_TEXTURE_2D, texture);
             glBindVertexArray(VAO);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
 
-            trans = glm::translate(trans, glm::vec3(0.9f, 0.0f, 0.0f));
-            trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
-            trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0, 0.0, 1.0));
-            glUniformMatrix4fv(transformLoc, 1, GL_FALSE, &trans[0][0]);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
+            for (unsigned int i = 0; i < 10; i++)
+            {
+                glm::mat4 model = glm::mat4(1.0f);
+                model = glm::translate(model, cubePositions[i]);
+                float angle = 20.0f * i;
+                model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+                shader.setMat4("model", model);
+
+                glDrawArrays(GL_TRIANGLES, 0, 36);
+            }
 
             glfwSwapBuffers(window);
             glfwPollEvents();

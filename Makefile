@@ -3,7 +3,7 @@ include config.mk
 SRC = main.cpp
 OBJ = ${SRC:.cpp=.o}
 
-all: clean app run
+all: clean app
 
 app: ${OBJ}
 	${CC} -o $@ ${OBJ} ${LDFLAGS}

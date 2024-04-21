@@ -1,4 +1,4 @@
-#include "glad.c"
+#include "libs/glad.c"
 #include <GLFW/glfw3.h>
 #include <cmath>
 #include <cstdio>
@@ -7,7 +7,7 @@
 #include <iostream>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "libs/stb_image.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -174,7 +174,7 @@ class Application
         // load image data
         int width, height, nrChannels;
         stbi_set_flip_vertically_on_load(true);
-        unsigned char *imageData = stbi_load("./niko.png", &width, &height, &nrChannels, 0);
+        unsigned char *imageData = stbi_load("./assets/niko.png", &width, &height, &nrChannels, 0);
 
         if (imageData)
         {
@@ -211,31 +211,19 @@ class Application
 
             shader.use();
 
-            glm::mat4 model = glm::mat4(1.0f);
-            model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-
             glm::mat4 view = glm::mat4(1.0f);
             view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
 
             glm::mat4 projection;
             projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
 
-            int modelLoc = glGetUniformLocation(shader.id, "model");
-            shader.setMat4("model", model);
-
-            int viewLoc = glGetUniformLocation(shader.id, "view");
             shader.setMat4("view", view);
-
-            int projectionLoc = glGetUniformLocation(shader.id, "projection");
             shader.setMat4("projection", projection);
 
             glm::mat4 trans = glm::mat4(1.0f);
-            trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
             trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0, 0.0, 1.0));
 
-            unsigned int transformLoc = glGetUniformLocation(shader.id, "transform");
             shader.setMat4("transform", trans);
-
             shader.setVec4("ourColor", 0.0f, greenValue, 0.0f, 1.0f);
             shader.setVec3("random", redValue, greenValue, blueValue);
 

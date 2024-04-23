@@ -13,12 +13,26 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "camera.h"
 #include "shader.h"
 
 using namespace std;
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
+
+bool firstMouse = true;
+float lastX = WIDTH / 2.0f;
+float lastY = HEIGHT / 2.0f;
+
+
+Camera camera(
+    glm::vec3(0.0f, 0.0f, 3.0f),
+    glm::perspective(glm::radians(90.0f), 800.0f / 600.0f, 0.1f, 100.0f)
+);
+
+void framebufferSizeCallback(GLFWwindow *window, int width, int height);
+void mouseMoveCallback(GLFWwindow* window, double xposIn, double yposIn);
 
 float cubeVertices[] = {
     -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
@@ -95,6 +109,9 @@ class Application
 
     unsigned int texture;
 
+    float deltaTime;
+    float lastFrame;
+
     void init()
     {
         glfwInit();
@@ -105,7 +122,7 @@ class Application
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-        window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", NULL, NULL);
+        window = glfwCreateWindow(WIDTH, HEIGHT, "Cubes", NULL, NULL);
 
         if (window == NULL)
         {
@@ -123,12 +140,15 @@ class Application
             return;
         }
 
-        glViewport(0, 0, WIDTH, HEIGHT);
-
         glEnable(GL_DEPTH_TEST);
 
+        glViewport(0, 0, WIDTH, HEIGHT);
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
         glfwSetWindowAspectRatio(window, 8, 6);
-        glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
+        glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+        glfwSetCursorPosCallback(window, mouseMoveCallback);
 
         loadVertices();
         loadTexture();
@@ -197,35 +217,33 @@ class Application
 
     void update()
     {
+        deltaTime = 0.0f;	// Time between current frame and last frame
+        lastFrame = 0.0f; // Time of last frame
+
         while (!glfwWindowShouldClose(window))
         {
             processInput();
 
-            float timeValue = glfwGetTime();
+            float time = glfwGetTime();
+            deltaTime = time - lastFrame;
+            lastFrame = time;
 
-            float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
-            float redValue = (sin(timeValue) / 1.0f) + 0.8f;
-            float blueValue = (sin(timeValue) / 3.0f) + 0.1f;
+            float greenValue = (sin(time) / 2.0f) + 0.5f;
+            float redValue = (sin(time) / 1.0f) + 0.8f;
+            float blueValue = (sin(time) / 3.0f) + 0.1f;
 
             glClearColor(0.4f, 0.1f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             shader.use();
 
-            const float radius = 10.0f;
-            float camX = sin(glfwGetTime()) * radius;
-            float camZ = cos(glfwGetTime()) * radius;
-            glm::mat4 view;
-            view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+            camera.updateView();
 
-            glm::mat4 projection;
-            projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
-
-            shader.setMat4("view", view);
-            shader.setMat4("projection", projection);
+            shader.setMat4("view", camera.view);
+            shader.setMat4("projection", camera.projection);
 
             glm::mat4 trans = glm::mat4(1.0f);
-            trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0, 0.0, 1.0));
+            trans = glm::rotate(trans, time, glm::vec3(0.0, 0.0, 1.0));
 
             shader.setMat4("transform", trans);
             shader.setVec4("ourColor", 0.0f, greenValue, 0.0f, 1.0f);
@@ -261,10 +279,38 @@ class Application
 
     void processInput()
     {
+        // quit program
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(window, true);
+
+        // handle movement
+        float speed = camera.speed * deltaTime;
+
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+            camera.position += speed * camera.front;
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+            camera.position -= speed * camera.front;
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+            camera.position -= glm::normalize(glm::cross(camera.front, camera.up)) * speed;
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+            camera.position += glm::normalize(glm::cross(camera.front, camera.up)) * speed;
+
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+            camera.position += speed * camera.up;
+        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+            camera.position -= speed * camera.up;
     }
 };
+
+void framebufferSizeCallback(GLFWwindow *window, int width, int height)
+{
+    glViewport(0, 0, width, height);
+}
+
+void mouseMoveCallback(GLFWwindow* window, double xpos, double ypos)
+{
+    camera.moveFromMouse(xpos, ypos);
+}
 
 int main(int argc, char *argv[])
 {
